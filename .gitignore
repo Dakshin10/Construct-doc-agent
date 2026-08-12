@@ -1,0 +1,42 @@
+# Environment / secrets
+.env
+*.env
+
+# Output & rendered images
+rendered_pages/
+output_table.csv
+*.csv
+
+# Confidential test documents — keep out of VCS
+test_docs/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# GCP service account keys
+*.json
+!*.example.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
