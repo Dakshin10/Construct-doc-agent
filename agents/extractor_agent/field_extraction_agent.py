@@ -935,7 +935,7 @@ def extract_table_from_doc(
     Parameters
     ----------
     doc_data:
-        Output dictionary from ingestion.pdf_vision_loader.load_pdf_for_vision()
+        Output dictionary from agents.extractor_agent.pdf_vision_loader.load_pdf_for_vision()
     api_key:
         Optional GEMINI_API_KEY override.
     model_name:

@@ -35,7 +35,7 @@ async def run_workflow(pdf_path: str) -> None:
     """Run the Reader-to-Database ADK workflow with the given PDF file path."""
     from google.adk.runners import InMemoryRunner
     from google.genai import types as genai_types
-    from app.agent import root_agent
+    from agents.extractor_agent.agent import root_agent
 
     abs_pdf_path = str(Path(pdf_path).resolve())
 
