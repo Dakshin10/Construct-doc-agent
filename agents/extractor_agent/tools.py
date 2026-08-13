@@ -142,9 +142,9 @@ async def _run_database_agent_async(payload_json: str) -> str:
     return final_response or "(No response returned from database agent)"
 
 
-def send_to_database_agent(payload_json: str) -> dict[str, Any]:
+async def send_to_database_agent(payload_json: str) -> dict[str, Any]:
     """
-    Transmit extracted JSON payload to the AlloyDB Database Agent (alloydb_adk_agent).
+    Transmit extracted JSON payload to the AlloyDB Database Agent.
 
     Args:
         payload_json: JSON string representing the array of footing objects or master schema record.
@@ -157,17 +157,7 @@ def send_to_database_agent(payload_json: str) -> dict[str, Any]:
         parsed = json.loads(payload_json)
         logger.info("Invoking Database Agent in-process with payload of %d item(s)...", len(parsed) if isinstance(parsed, list) else 1)
 
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            import nest_asyncio
-            nest_asyncio.apply()
-            db_output = loop.run_until_complete(_run_database_agent_async(json.dumps(parsed)))
-        else:
-            db_output = asyncio.run(_run_database_agent_async(json.dumps(parsed)))
+        db_output = await _run_database_agent_async(json.dumps(parsed))
 
         return {
             "status": "success",
