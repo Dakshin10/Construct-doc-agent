@@ -37,14 +37,15 @@ def test_spatial_callout_pairing_and_invariants(doc_data):
     assert qc_report["orphan_columns"] == 6, "Expected 6 orphan columns bearing on continuous wall footing"
     assert qc_report["orphan_footings"] == 0, "Orphan footings must be 0 (no un-paired footing callouts)"
 
-    # 2. Verify non-tautological structural invariants
+    # 2. Verify independent pairing-closure invariant (DEFECT 5 FIX: not tautological)
     assert qc_report["total_pads"] == 50, "Total pads must equal 50"
     assert qc_report["total_piers"] == 50, "Total piers must equal 50"
     assert qc_report["total_columns"] == 56, "Total columns must equal 56"
     assert qc_report["total_base_plates"] == 56, "Total base plates must equal 56"
-
-    assert qc_report["column_baseplate_invariant"] is True, "Column to Base Plate invariant (56 == 56) failed"
-    assert qc_report["footing_pier_invariant"] is True, "Footing to Pier invariant (50 == 50) failed"
+    assert qc_report["pairing_closure_ok"] is True, "Pairing closure: pairs + orphan_foots must equal total foots"
+    # Verify snap parameters are derived (non-zero bias expected on this sheet)
+    assert qc_report["grid_snap_tol_x"] > 0.0, "Snap tolerance X must be derived (>0)"
+    assert qc_report["grid_snap_tol_y"] > 0.0, "Snap tolerance Y must be derived (>0)"
 
 
 def test_element_quantity_ground_truth(doc_data):

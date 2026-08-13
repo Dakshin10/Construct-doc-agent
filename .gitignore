@@ -40,3 +40,6 @@ ENV/
 .idea/
 *.swp
 *.swo
+
+# Tests
+tests/
