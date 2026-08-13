@@ -31,9 +31,10 @@ env/
 ENV/
 .python-version
 
-# GCP service account keys
+# GCP service account keys & output JSON
 *.json
 !*.example.json
+!output_table.json
 
 # IDE
 .vscode/

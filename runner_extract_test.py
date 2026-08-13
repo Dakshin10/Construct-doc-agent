@@ -27,7 +27,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from ingestion.pdf_vision_loader import load_pdf_for_vision
-from agents.field_extraction_agent import extract_table_from_doc
+from agents.field_extraction_agent import extract_table_from_doc, _parse_vector_schedule_dimensions, _count_diagram_quantities_with_pairing
+from agents.json_exporter import save_json_file, convert_to_json_string
 
 
 def _print_results_table(table_rows: list[dict]) -> None:
@@ -96,6 +97,14 @@ def _parse_args() -> argparse.Namespace:
         help="Path to the PDF diagram file to process.",
     )
     parser.add_argument(
+        "--json",
+        nargs="?",
+        const="output_table.json",
+        default="output_table.json",
+        metavar="PATH",
+        help="Path to save JSON output file (default: output_table.json).",
+    )
+    parser.add_argument(
         "--csv",
         metavar="PATH",
         help="Optional path to save CSV output table.",
@@ -134,11 +143,22 @@ def main() -> None:
     # Step 2: Gemini Vision Table & QTY Extraction
     print("Step 2/2 — Running Gemini Vision table extraction & element count agent...")
     table_rows = extract_table_from_doc(doc_data)
+    vector_schedules = _parse_vector_schedule_dimensions("", doc_data)
+    _, _, qc_report = _count_diagram_quantities_with_pairing(pdf_path, doc_data)
 
     # Print Table
     _print_results_table(table_rows)
 
-    # Save CSV if requested
+    # Save JSON output (default output_table.json)
+    json_target = Path(args.json) if args.json else Path("output_table.json")
+    save_json_file(
+        table_rows=table_rows,
+        json_path=json_target,
+        vector_schedules=vector_schedules,
+        qc_report=qc_report,
+    )
+
+    # Save CSV if explicitly requested
     if args.csv:
         _save_csv(table_rows, Path(args.csv))
 
