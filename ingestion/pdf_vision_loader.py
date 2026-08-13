@@ -29,7 +29,7 @@ import pymupdf as fitz  # PyMuPDF
 def load_pdf_for_vision(
     pdf_path: str | Path,
     output_dir: str | Path | None = None,
-    dpi: int = 200,
+    dpi: int = 300,
 ) -> dict:
     """Load a PDF, extract layout text, and render pages to PNG images for Gemini Vision.
 
@@ -41,15 +41,16 @@ def load_pdf_for_vision(
         Directory to save rendered page images. Defaults to a 'rendered_pages'
         subfolder next to the PDF or in current working directory.
     dpi:
-        Resolution for image rendering (default 200 DPI for high vision clarity).
+        Resolution for image rendering (default 300 DPI for high vision clarity).
 
     Returns
     -------
     dict with keys:
       - "pdf_path": str
-      - "page_images": list[dict] with page_number, image_path, image_bytes
+      - "page_images": list[dict] with page_number, image_path, image_bytes, width, height
       - "full_text": str
       - "text_blocks": list[dict]
+      - "words": list[dict] with x0, y0, x1, y1, text, page
     """
     path = Path(pdf_path).resolve()
     if not path.exists():
@@ -65,6 +66,7 @@ def load_pdf_for_vision(
     doc = fitz.open(str(path))
     page_images: list[dict] = []
     text_blocks: list[dict] = []
+    words: list[dict] = []
     full_text_parts: list[str] = []
 
     for page_index in range(len(doc)):
@@ -87,17 +89,30 @@ def load_pdf_for_vision(
                 "image_bytes": img_bytes,
                 "width": pix.width,
                 "height": pix.height,
+                "page_rect": [page.rect.x0, page.rect.y0, page.rect.x1, page.rect.y1],
             }
         )
 
-        # Extract text blocks
+        # Extract text blocks & page text
         page_text = page.get_text("text")
         full_text_parts.append(f"--- PAGE {page_num} ---\n{page_text}")
 
         for block in page.get_text("blocks"):
             block_text = block[4].strip() if len(block) > 4 else ""
             if block_text:
-                text_blocks.append({"text": block_text, "page": page_num})
+                text_blocks.append({
+                    "text": block_text,
+                    "page": page_num,
+                    "bbox": [block[0], block[1], block[2], block[3]],
+                })
+
+        for w in page.get_text("words"):
+            # w: (x0, y0, x1, y1, "word", block_no, line_no, word_no)
+            words.append({
+                "bbox": [w[0], w[1], w[2], w[3]],
+                "text": w[4],
+                "page": page_num,
+            })
 
     doc.close()
 
@@ -106,4 +121,5 @@ def load_pdf_for_vision(
         "page_images": page_images,
         "full_text": "\n\n".join(full_text_parts),
         "text_blocks": text_blocks,
+        "words": words,
     }

@@ -39,7 +39,7 @@ def _print_results_table(table_rows: list[dict]) -> None:
     try:
         from tabulate import tabulate
 
-        headers = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY"]
+        headers = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY", "Reinforcement", "Sample Grid References"]
         rows = [
             [
                 r.get("Segment", ""),
@@ -50,19 +50,21 @@ def _print_results_table(table_rows: list[dict]) -> None:
                 r.get("Width (mm)", ""),
                 r.get("Height (mm)", ""),
                 r.get("QTY", 0),
+                r.get("Reinforcement", ""),
+                r.get("Sample Grid References", ""),
             ]
             for r in table_rows
         ]
         print("\n" + tabulate(rows, headers=headers, tablefmt="grid") + "\n")
     except ImportError:
         # Simple fallback text table formatting
-        headers = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY"]
+        headers = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY", "Reinforcement", "Sample Grid References"]
         print("\t".join(headers))
         for r in table_rows:
             print(
                 f"{r.get('Segment')}\t{r.get('PDF Link')}\t{r.get('Image Link')}\t"
                 f"{r.get('Type')}\t{r.get('Span (mm)')}\t{r.get('Width (mm)')}\t"
-                f"{r.get('Height (mm)')}\t{r.get('QTY')}"
+                f"{r.get('Height (mm)')}\t{r.get('QTY')}\t{r.get('Reinforcement')}\t{r.get('Sample Grid References')}"
             )
 
 
@@ -72,7 +74,7 @@ def _save_csv(table_rows: list[dict], csv_path: Path) -> None:
         return
 
     csv_path.parent.mkdir(parents=True, exist_ok=True)
-    fieldnames = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY"]
+    fieldnames = ["Segment", "PDF Link", "Image Link", "Type", "Span (mm)", "Width (mm)", "Height (mm)", "QTY", "Reinforcement", "Sample Grid References"]
 
     with open(csv_path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
