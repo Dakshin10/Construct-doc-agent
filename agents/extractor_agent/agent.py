@@ -17,7 +17,6 @@ from google.adk.agents import Agent
 from .tools import (
     extract_pdf_drawing_data,
     send_to_database_agent,
-    commit_and_push_to_main,
 )
 
 logger = logging.getLogger(__name__)
@@ -26,13 +25,13 @@ root_agent = Agent(
     name="reader_to_database_workflow_agent",
     model="gemini-flash-lite-latest",
     description=(
-        "An end-to-end structural drawing reader agent that extracts PDF schedule data into JSON, "
-        "sends the formatted payload to the AlloyDB Database Agent, and commits/pushes results to main."
+        "An end-to-end structural drawing ent that extrreader agacts PDF schedule data into JSON "
+        "and sends the formatted payload to the AlloyDB Database Agent."
     ),
     instruction="""
 You are the Reader & Database Workflow Orchestrator Agent.
 
-Your goal is to process structural drawing PDF files and ensure that the extracted structural schedule data is successfully saved, written to the AlloyDB database via the database agent, and committed to the main git branch.
+Your goal is to process structural drawing PDF files and ensure that the extracted structural schedule data is successfully extracted into JSON and written to the AlloyDB database via the database agent.
 
 ## Workflow Execution Steps
 
@@ -44,21 +43,16 @@ Your goal is to process structural drawing PDF files and ensure that the extract
 - Convert the extracted `db_payload` (or formatted JSON payload) into a JSON string.
 - Call `send_to_database_agent(payload_json)` passing that JSON string.
 - Verify that the database agent completes successfully.
-
-### Step 3: Commit and Push to Main Branch
-- Call `commit_and_push_to_main(commit_message)` to stage `output_table.json`, commit, and push to origin/main.
 - Summarize the final execution results for the user including:
   1. Extracted table rows & footing count.
   2. Database Agent insertion response.
-  3. Git push status.
 
 ## Rules
-1. ALWAYS execute all 3 steps in sequence unless an error occurs in a step.
+1. ALWAYS execute Step 1 and Step 2 in sequence unless an error occurs.
 2. Return all tool responses clearly to the user.
 """,
     tools=[
         extract_pdf_drawing_data,
         send_to_database_agent,
-        commit_and_push_to_main,
     ],
 )

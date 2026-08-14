@@ -13,11 +13,11 @@ Verifies:
 
 from pathlib import Path
 import pytest
-from agents.field_extraction_agent import (
+from agents.extractor_agent.field_extraction_agent import (
     extract_table_from_doc,
     _count_diagram_quantities_with_pairing,
 )
-from ingestion.pdf_vision_loader import load_pdf_for_vision
+from agents.extractor_agent.pdf_vision_loader import load_pdf_for_vision
 
 PDF_PATH = Path(r"C:\Users\daksh\OneDrive - MinoriLabs\Construction_ai_assitant\Foundational_diagram.pdf")
 

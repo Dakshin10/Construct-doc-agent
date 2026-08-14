@@ -13,13 +13,17 @@ from pathlib import Path
 from typing import Any, Sequence
 
 ALLOWED_FIELDS = (
+    "Type",
+    "Category",
+    "Length (mm)",
+    "Width (mm)",
+    "Depth (mm)",
+    "Primary reinforcement",
+    "Secondary reinforcement / notes",
+    "Plan instances",
     "Segment",
     "PDF Link",
     "Image Link",
-    "Type",
-    "Span (mm)",
-    "Width (mm)",
-    "Height (mm)",
     "QTY",
 )
 

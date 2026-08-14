@@ -26,9 +26,9 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
-from ingestion.pdf_vision_loader import load_pdf_for_vision
-from agents.field_extraction_agent import extract_table_from_doc, _parse_vector_schedule_dimensions, _count_diagram_quantities_with_pairing
-from agents.json_exporter import save_json_file, convert_to_json_string
+from agents.extractor_agent.pdf_vision_loader import load_pdf_for_vision
+from agents.extractor_agent.field_extraction_agent import extract_table_from_doc, _parse_vector_schedule_dimensions, _count_diagram_quantities_with_pairing
+from agents.extractor_agent.json_exporter import save_json_file, convert_to_json_string
 
 
 def _print_results_table(table_rows: list[dict]) -> None:

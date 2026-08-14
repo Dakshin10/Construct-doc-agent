@@ -56,8 +56,7 @@ async def run_workflow(pdf_path: str) -> None:
             prompt = (
                 f"Please execute the workflow for PDF: '{abs_pdf_path}'. "
                 f"Step 1: Extract PDF drawing data. "
-                f"Step 2: Send extracted JSON payload to database agent. "
-                f"Step 3: Commit and push output_table.json to main branch."
+                f"Step 2: Send extracted JSON payload to database agent."
             )
 
             user_message = genai_types.Content(

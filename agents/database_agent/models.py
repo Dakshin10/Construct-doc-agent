@@ -49,42 +49,29 @@ class MasterRecord(BaseModel):
         return values
 
 
-class SpreadFootingRecord(BaseModel):
+class FoundationElementRecord(BaseModel):
     """
-    Represents one row in the spread_footing_pad_schedule AlloyDB table.
+    Represents one row in the salit_steel_foundation_diagram AlloyDB table.
 
     Fields
     ------
-    footing_type      : Primary key (string, e.g. "F1")
-    length            : Dimension length (string, e.g. "1300mm")
-    width             : Dimension width (string, e.g. "1300mm")
-    depth             : Dimension depth (string, e.g. "400mm")
-    longitudinal_bars : Specification string for longitudinal bars
-    lateral_bars      : Specification string for lateral bars
+    element_type                  : Primary key (e.g. "F1", "P1", "C1", "BP1")
+    category                      : Category (e.g. "Spread footing pad", "Concrete pier", "Steel column", "Base plate")
+    length_mm                     : Length dimension string (e.g. "1300", "500", "203")
+    width_mm                      : Width dimension string (e.g. "1300", "500", "203")
+    depth_mm                      : Depth / thickness string (e.g. "400", "per section", "7.9 (wall thk.)")
+    primary_reinforcement         : Primary reinforcement specification string
+    secondary_reinforcement_notes : Secondary reinforcement / ties / notes specification string
+    plan_instances                : QTY diagram count on layout plan (e.g. 33, 6, 0)
     """
 
-    footing_type: str = Field(..., min_length=1, description="Footing type identifier — must be non-empty string")
-    length: str = Field(..., min_length=1, description="Length with unit — must be non-empty string")
-    width: str = Field(..., min_length=1, description="Width with unit — must be non-empty string")
-    depth: str = Field(..., min_length=1, description="Depth with unit — must be non-empty string")
-    longitudinal_bars: str = Field(..., min_length=1, description="Longitudinal reinforcement specs")
-    lateral_bars: str = Field(..., min_length=1, description="Lateral reinforcement specs")
+    element_type: str = Field(..., min_length=1, description="Element type identifier (e.g. 'F1', 'P1', 'C1', 'BP1')")
+    category: str = Field(default="", description="Element category description")
+    length_mm: str = Field(default="", description="Length in mm")
+    width_mm: str = Field(default="", description="Width in mm")
+    depth_mm: str = Field(default="", description="Depth / thickness in mm")
+    primary_reinforcement: str = Field(default="", description="Primary reinforcement specs")
+    secondary_reinforcement_notes: str = Field(default="", description="Secondary reinforcement & notes")
+    plan_instances: int = Field(default=0, description="Diagram plan instance count (QTY)")
 
-    model_config = {
-        "extra": "forbid",
-        "strict": True,
-    }
-
-    @model_validator(mode="before")
-    @classmethod
-    def reject_none_values(cls, values: dict) -> dict:
-        """Reject payloads where any required field is explicitly set to null."""
-        if isinstance(values, dict):
-            for field_name, value in values.items():
-                if value is None:
-                    raise ValueError(
-                        f"Field '{field_name}' must not be null. "
-                        "All fields are required with non-null values."
-                    )
-        return values
 

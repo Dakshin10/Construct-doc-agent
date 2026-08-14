@@ -69,33 +69,27 @@ def extract_pdf_drawing_data(pdf_path: str) -> dict[str, Any]:
             qc_report=qc_report,
         )
 
-        # Build spread_footing_pad_schedule DB payload
+        # Build salit_steel_foundation_diagram DB payload with all 11 element rows
         db_payload = []
         for r in table_rows:
-            mark = r.get("Type", "").strip()
-            if mark.startswith("F") or "footing" in mark.lower():
-                span = r.get("Span (mm)", "")
-                width = r.get("Width (mm)", "")
-                height = r.get("Height (mm)", "")
-                rebar = r.get("Reinforcement", "")
-
-                length_str = f"{span}mm" if span else ""
-                width_str = f"{width}mm" if width else ""
-                depth_str = f"{height}mm" if height else ""
-
-                # Split rebar into longitudinal & lateral if semicolon separated
-                rebar_parts = [p.strip() for p in rebar.split(";") if p.strip()]
-                long_bar = rebar_parts[0] if len(rebar_parts) > 0 else rebar
-                lat_bar = rebar_parts[1] if len(rebar_parts) > 1 else rebar
-
-                db_payload.append({
-                    "footing_type": mark,
-                    "length": length_str,
-                    "width": width_str,
-                    "depth": depth_str,
-                    "longitudinal_bars": long_bar,
-                    "lateral_bars": lat_bar,
-                })
+            db_payload.append({
+                "element_type": r.get("Type", ""),
+                "Type": r.get("Type", ""),
+                "category": r.get("Category", ""),
+                "Category": r.get("Category", ""),
+                "length_mm": r.get("Length (mm)", ""),
+                "Length (mm)": r.get("Length (mm)", ""),
+                "width_mm": r.get("Width (mm)", ""),
+                "Width (mm)": r.get("Width (mm)", ""),
+                "depth_mm": r.get("Depth (mm)", ""),
+                "Depth (mm)": r.get("Depth (mm)", ""),
+                "primary_reinforcement": r.get("Primary reinforcement", ""),
+                "Primary reinforcement": r.get("Primary reinforcement", ""),
+                "secondary_reinforcement_notes": r.get("Secondary reinforcement / notes", ""),
+                "Secondary reinforcement / notes": r.get("Secondary reinforcement / notes", ""),
+                "plan_instances": r.get("Plan instances", 0),
+                "Plan instances": r.get("Plan instances", 0),
+            })
 
         return {
             "status": "success",
@@ -142,19 +136,35 @@ async def _run_database_agent_async(payload_json: str) -> str:
     return final_response or "(No response returned from database agent)"
 
 
+def _parse_json_or_literal(raw: Any) -> Any:
+    if isinstance(raw, (list, dict)):
+        return raw
+    if not isinstance(raw, str):
+        return raw
+    raw = raw.strip()
+    try:
+        return json.loads(raw)
+    except Exception:
+        try:
+            return json.loads(raw.replace("'", '"'))
+        except Exception:
+            import ast
+            return ast.literal_eval(raw)
+
+
 async def send_to_database_agent(payload_json: str) -> dict[str, Any]:
     """
     Transmit extracted JSON payload to the AlloyDB Database Agent.
 
     Args:
-        payload_json: JSON string representing the array of footing objects or master schema record.
+        payload_json: JSON string or list representing the array of footing objects or schedule record.
 
     Returns:
         dict containing execution status and output from database agent.
     """
     try:
-        # Validate JSON format before sending
-        parsed = json.loads(payload_json)
+        # Validate and parse payload into standard python object
+        parsed = _parse_json_or_literal(payload_json)
         logger.info("Invoking Database Agent in-process with payload of %d item(s)...", len(parsed) if isinstance(parsed, list) else 1)
 
         db_output = await _run_database_agent_async(json.dumps(parsed))
