@@ -44,3 +44,10 @@ ENV/
 
 # Tests
 tests/
+
+# Logs & Database / Local Session
+*.log
+.adk/
+*.db
+scratch/
+

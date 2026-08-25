@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 root_agent = Agent(
     name="reader_to_database_workflow_agent",
-    model="gemini-flash-lite-latest",
+    model="gemini-3.6-flash",
     description=(
         "An end-to-end structural drawing ent that extrreader agacts PDF schedule data into JSON "
         "and sends the formatted payload to the AlloyDB Database Agent."

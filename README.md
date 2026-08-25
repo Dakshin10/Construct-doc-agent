@@ -1,77 +1,82 @@
 # Construct AI — Structural Drawing Reader to AlloyDB Workflow (`beta_salitsteels`)
 
-An end-to-end AI workflow built with **Google Agent Development Kit (ADK)** and **Gemini 3.6 Flash Vision** that extracts structural schedule tables and 2D diagram element quantities from PDF drawings, formats the structured data, and commits the records into an **AlloyDB PostgreSQL** database.
+An end-to-end AI workflow built with **Google Agent Development Kit (ADK)** and **Gemini 3.6 Flash / Flash Lite** that extracts structural schedule tables and 2D diagram element quantities from PDF drawings, parses geometric and schedule attributes, formats structured payloads, and commits records into an **AlloyDB PostgreSQL** database.
 
 ---
 
-## 🏗️ System Architecture
+## 📁 Detailed Directory & Workflow Architecture
 
 ```text
 beta_salitsteels/
-├── .env                    # Unified environment configuration
-├── .env.template           # Template for environment variables
-├── main.py                 # Primary entry point for the end-to-end workflow
-├── runner_extract_test.py  # Standalone extraction runner
-├── agents/
-│   ├── extractor_agent/    # PDF Vision Loader, Schedule Extractor, & JSON Exporter
-│   │   ├── agent.py
-│   │   ├── tools.py
-│   │   ├── field_extraction_agent.py
-│   │   ├── json_exporter.py
-│   │   └── pdf_vision_loader.py
-│   └── database_agent/     # AlloyDB ADK Database Agent & Connection Tools
-│       ├── agent.py
-│       ├── tools.py
-│       ├── db.py
-│       └── models.py
-└── tests/                  # Pytest regression suite
+├── main.py                         # ADK Workflow Orchestrator (Extractor Agent -> Database Agent)
+├── runner_extract_test.py          # Standalone PDF extraction & tabular CLI execution runner
+├── requirements.txt                # Core Python package dependencies
+├── requirements_gcp.txt            # GCP & AlloyDB specific package requirements
+├── output_table.json               # Extracted output payload (JSON format)
+├── output_table.csv                # Formatted CSV dump of extracted structural schedules
+├── .env                            # Active environment configuration (API keys, DB host)
+├── .env.template                   # Configuration template
+├── agents/                         # Google ADK Multi-Agent System
+│   ├── extractor_agent/            # Extractor & Vision Parser Agent module
+│   │   ├── agent.py                # Root orchestrator agent definition (`reader_to_database_workflow_agent`)
+│   │   ├── tools.py                # ADK Tool definitions (`extract_pdf_drawing_data`, `send_to_database_agent`)
+│   │   ├── field_extraction_agent.py # Full heuristic + Vision extraction engine (Schedule tables & Plan marks)
+│   │   ├── pdf_vision_loader.py    # PyMuPDF / PDF renderer & Gemini Vision prompt generator
+│   │   └── json_exporter.py       # Exporter utility for CSV & JSON payload formatting
+│   └── database_agent/             # AlloyDB Database Persistence Agent module
+│       ├── agent.py                # Database root agent definition (`alloydb_insert_agent`)
+│       ├── tools.py                # ADK Database tools (`insert_foundation_element_records_batch`, etc.)
+│       ├── db.py                   # AlloyDB connection manager & psycopg cursor utilities
+│       └── models.py               # Pydantic data schemas for foundation records validation
+└── tests/                          # Automated Pytest suite and geometric/parsing probe tools
+    ├── test_extraction_pipeline.py # End-to-end pipeline unit tests
+    ├── test_rotation_invariance.py # Tests for bounding box normalization across PDF page rotations
+    ├── test_geometric_bearing.py   # Spatial bearing & mark-to-geometry association tests
+    ├── probe_schedule_debug.py     # Diagnostic probe for structural schedule table bounds
+    ├── probe_pairing_debug.py      # Diagnostic probe for plan instances mark-to-shape pairing
+    └── probe_geometry.py           # Geometric bounding box analysis tool
 ```
 
 ---
 
-## ⚡ Prerequisites & Setup
+## 🤖 ADK Multi-Agent Workflow Details
 
-### 1. Requirements
-- **Python 3.10+** (tested up to Python 3.14)
-- **Google Cloud AlloyDB** instance with Auth Proxy running on `127.0.0.1:5432`
+The system operates as a coordinated **2-Agent Workflow** executed via Google ADK (`InMemoryRunner`):
 
-### 2. Install Dependencies
-Install all required Python packages into your active environment:
+### 1. Extractor Agent (`agents/extractor_agent`)
+- **`agent.py`**: Defines `root_agent` (`reader_to_database_workflow_agent`). Orchestrates drawing extraction and transfers structured payloads to the database agent.
+- **`tools.py`**: Wraps the extraction engine (`extract_pdf_drawing_data`) and database bridge (`send_to_database_agent`).
+- **`field_extraction_agent.py`**: Core intelligence layer containing multi-stage parsing logic:
+  - **Schedule Table Extraction**: Identifies footing/column/wall schedule tables (Marks, Length, Width, Depth, Top/Bottom Reinforcement).
+  - **Plan Element Quantity (QTY) Count**: Scans 2D drawing vector paths and text marks, pairing marks to geometric bounding shapes (footings, columns, grade beams) with spatial bearing offsets and rotation invariance.
+  - **Fallback Gemini Vision Extraction**: Utilizes Gemini 3.6 Flash Vision when high-complexity schedules require multimodal visual comprehension.
+- **`pdf_vision_loader.py`**: Converts PDF pages into high-DPI images and structures multi-modal prompts for Gemini Vision API calls.
+- **`json_exporter.py`**: Merges schedule properties with 2D plan counts, exporting standardized results into `output_table.json` and `output_table.csv`.
 
+### 2. Database Agent (`agents/database_agent`)
+- **`agent.py`**: Defines `root_agent` (`alloydb_insert_agent`).
+- **`tools.py`**: Provides single record (`insert_foundation_element_record`) and batch insertion (`insert_foundation_element_records_batch`) capabilities into AlloyDB PostgreSQL.
+- **`db.py`**: Manages PostgreSQL connections using `psycopg` (v3) over AlloyDB Auth Proxy with auto-reconnect and schema setup (`salit_steel_foundation_diagram`).
+- **`models.py`**: Validates record data schema (Type, Category, Dimensions, Reinforcement, Quantity, Source PDF).
+
+---
+
+## ⚡ Setup & Environment Configuration
+
+### 1. Install Dependencies
 ```powershell
 pip install -r requirements.txt
 ```
 
-### 3. Start AlloyDB Auth Proxy (Cloud Connectivity)
-Before running the database workflow, start the Google Cloud AlloyDB Auth Proxy in a separate terminal window to connect your local machine securely to your Cloud AlloyDB instance:
-
-```powershell
-# Standard Proxy command (or using C:\Users\daksh\bin\alloydb-auth-proxy.exe)
-alloydb-auth-proxy "projects/salitsteel-502008/locations/asia-south1/clusters/slait-steel/instances/primary"
-
-# Or if connecting via Public IP:
-alloydb-auth-proxy "projects/salitsteel-502008/locations/asia-south1/clusters/slait-steel/instances/primary" --public-ip
-```
-
----
-
-## 🔑 Environment Configuration
-
-Copy `.env.template` to `.env` in the root directory and configure your credentials:
-
-```powershell
-cp .env.template .env
-```
-
-Set the following variables in `.env`:
-
+### 2. Configure Environment (`.env`)
+Create a `.env` file from `.env.template`:
 ```env
-# Gemini API Keys
+# Gemini API Key
 GEMINI_API_KEY=your_gemini_api_key_here
 GOOGLE_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-3.6-flash
 
-# AlloyDB Database Connection (via Auth Proxy)
+# AlloyDB PostgreSQL Database Connection
 ALLOYDB_HOST=127.0.0.1
 ALLOYDB_PORT=5432
 ALLOYDB_DATABASE=postgres
@@ -79,48 +84,52 @@ ALLOYDB_USER=postgres
 ALLOYDB_PASSWORD=your_alloydb_password_here
 ```
 
----
-
-## 🗄️ Database Table Setup
-
-Before running the workflow for the first time, ensure the target table `structural_footing_schedule` exists in AlloyDB. You can initialize it using this Python command:
-
+### 3. AlloyDB Auth Proxy
+Start the Cloud AlloyDB Auth Proxy in a separate terminal:
 ```powershell
-python -c "import psycopg; from agents.database_agent.db import get_connection; conn = get_connection(); conn.execute('CREATE TABLE IF NOT EXISTS structural_footing_schedule (footing_type VARCHAR(50) PRIMARY KEY, length VARCHAR(50) NOT NULL, width VARCHAR(50) NOT NULL, depth VARCHAR(50) NOT NULL, longitudinal_bars TEXT, lateral_bars TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);'); conn.commit(); print('Table structural_footing_schedule ready!')"
+alloydb-auth-proxy "projects/salitsteel-502008/locations/asia-south1/clusters/slait-steel/instances/primary" --public-ip
 ```
 
 ---
 
-## 🚀 Execution Commands
+## 🚀 Execution & Usage
 
-### 1. Run Full End-to-End Workflow (Recommended)
-Run the main orchestrator workflow to extract PDF data, send the JSON payload to the Database Agent, and stage results:
-
+### 1. Full ADK End-to-End Workflow (Extractor Agent -> Database Agent)
+Run the orchestrator pipeline to process the drawing PDF and insert records into AlloyDB:
 ```powershell
-# Run with default PDF path
-python main.py
-
-# Or specify a custom PDF file path
-python main.py --pdf "C:\path\to\your\structural_drawing.pdf"
+python main.py --pdf "path/to/structural_drawing.pdf"
 ```
 
-### 2. Run Standalone Extractor Agent
-To extract structural tables and print the formatted grid without committing to the database:
-
+### 2. Standalone Extraction Runner (Extract & Generate JSON/CSV Output)
+Run extraction only without inserting records into AlloyDB:
 ```powershell
-python runner_extract_test.py --pdf "C:\path\to\your\structural_drawing.pdf"
+python runner_extract_test.py --pdf "path/to/structural_drawing.pdf"
 ```
 
-### 3. Run Pytest Suite
-Run the automated regression test suite to verify table parsing, element pairing, and rotation invariance:
-
+### 3. Run Automated Tests & Diagnostic Probes
+Execute Pytest suite for extraction accuracy, spatial pairing, and rotation invariance:
 ```powershell
+# Run full test suite
 pytest tests/
+
+# Run targeted rotation invariance test
+pytest tests/test_rotation_invariance.py
+
+# Run schedule probe diagnostic tool
+python tests/probe_schedule_debug.py
 ```
 
 ---
 
-## 📊 Summary of Outputs
+## 📊 Workflow Outputs & Persistence
 
-- **`output_table.json`**: Formatted JSON output of all extracted structural elements, dimensions, QTY counts, and rebar specifications.
-- **AlloyDB Table (`structural_footing_schedule`)**: Parameterized UPSERT containing footing type, length, width, depth, longitudinal bars, and lateral bars.
+- **`output_table.json`**: Structured array of footing schedule objects including dimensions, rebar specs, and quantity counts.
+- **`output_table.csv`**: Tabular CSV export of extracted schedules for spreadsheet review.
+- **AlloyDB Table (`salit_steel_foundation_diagram`)**: UPSERT record persistence containing:
+  - `element_type` (e.g. `F1`, `F2`, `SF1`)
+  - `category` (e.g. `Footing Schedule`)
+  - `length_mm`, `width_mm`, `depth_mm`
+  - `primary_reinforcement`, `secondary_reinforcement`
+  - `plan_instances` (Extracted QTY count from 2D diagram)
+  - `source_pdf` (Filename of drawing)
+

@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 root_agent = Agent(
     name="alloydb_insert_agent",
-    model="gemini-flash-lite-latest",
+    model="gemini-3.6-flash",
     description=(
         "A database insertion agent that receives structured extracted foundation diagram JSON data and "
         "writes it into AlloyDB `salit_steel_foundation_diagram` table."
